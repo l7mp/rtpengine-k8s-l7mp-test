@@ -17,8 +17,10 @@ use NGCP::Rtpengine::Client;
 my $rtpengine_host    = '127.0.0.1';
 my $rtpengine_ng_port = 22222;
 my $local_ip_a        = '127.0.0.1';
+my $remote_ip_a       = undef;
 my $local_rtp_port_a  = 10000;
 my $local_ip_b        = '127.0.0.1';
+my $remote_ip_b       = undef;
 my $local_rtp_port_b  = 10002;
 
 my($man, $help, $verbose);
@@ -26,8 +28,10 @@ GetOptions(
     'rtpengine-host|r=s'         => \$rtpengine_host,
     'rtpengine-control-port|p=i' => \$rtpengine_ng_port,
     'local-ip-a=s'               => \$local_ip_a,
+    'remote-ip-a=s'              => \$remote_ip_a,
     'local-rtp-port-a=i'         => \$local_rtp_port_a,
     'local-ip-b=s'               => \$local_ip_b,
+    'remote-ip-b=s'              => \$remote_ip_b,
     'local-rtp-port-b=i'         => \$local_rtp_port_b,
     'verbose|v+'                 => \$verbose,
     'help|?'                     => \$help,
@@ -51,30 +55,28 @@ $b->{media_receiver} = $a;
 $a->offer($b, ICE => 'remove', label => "caller");
 $b->answer($a, ICE => 'remove', label => "callee");
 
-print Dumper $a;
-
 my $tag_a = $a->{tag};
-my $remote_media_a = $a->{media_receiver}{remote_sdp}{medias}[0];
-my $remote_rtp_ip_a    = $remote_media_a->{connection}{address};
+my $remote_media_a = $a->{remote_media};
+$remote_ip_a //= $remote_media_a->{connection}{address};
 my $remote_rtp_port_a  = $remote_media_a->{port};
 my $remote_rtcp_port_a = $remote_media_a->{rtcp_port};
 
-say "Caller connection: RTP: ${local_ip_a}:${local_rtp_port_a} -> ${remote_rtp_ip_a}:${remote_rtp_port_a} / RTCP: ${local_ip_a}:${local_rtcp_port_a} -> ${remote_rtp_ip_a}:${remote_rtcp_port_a}";
+say "Caller connection: RTP: ${local_ip_a}:${local_rtp_port_a} -> ${remote_ip_a}:${remote_rtp_port_a} / RTCP: ${local_ip_a}:${local_rtcp_port_a} -> ${remote_ip_a}:${remote_rtcp_port_a}";
 
 my $tag_b = $b->{tag};
-my $remote_media_b = $b->{media_receiver}{remote_sdp}{medias}[0];
-my $remote_rtp_ip_b    = $remote_media_b->{connection}{address};
+my $remote_media_b = $b->{remote_media};
+$remote_ip_b //= $remote_media_b->{connection}{address};
 my $remote_rtp_port_b  = $remote_media_b->{port};
 my $remote_rtcp_port_b = $remote_media_b->{rtcp_port};
 
-say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_rtp_ip_b}:${remote_rtp_port_b} / RTCP: ${local_ip_b}:${local_rtcp_port_b} -> ${remote_rtp_ip_b}:${remote_rtcp_port_b}";
+say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_ip_b}:${remote_rtp_port_b} / RTCP: ${local_ip_b}:${local_rtcp_port_b} -> ${remote_ip_b}:${remote_rtcp_port_b}";
 
-# $a->start_rtp();
-# $a->start_rtcp();
-# $b->start_rtp();
-# $b->start_rtcp();
+$a->start_rtp();
+$a->start_rtcp();
+$b->start_rtp();
+$b->start_rtcp();
 
-$r->timer_once(10, sub { $r->stop(); });
+$r->timer_once(3, sub { $r->stop(); });
 
 $r->run();
 
@@ -105,15 +107,35 @@ Start an RTP call via the given rtp-proxy.
 
 =item B<--rtpengine-host|-r>
 
+Rtpengine control channel IP.
+
 =item B<--rtpengine-control-port|-p>
+
+Rtpengine control channel port.
 
 =item B<--local-ip-a>
 
+Force local IP for caller.
+
+=item B<--remote-ip-a>
+
+Force remote IP for caller, override whatever was send by rtpengine.
+
 =item B<--local-rtp-port-a>
+
+Force local port for caller.
 
 =item B<--local-ip-b> 
 
+Force local IP for callee.
+
+=item B<--remote-ip-b> 
+
+Force remote IP for callee, override whatever was send by rtpengine.
+
 =item B<--local-rtp-port-b>
+
+Force local port for callee.
 
 =item B<-v|--verbose>
 
