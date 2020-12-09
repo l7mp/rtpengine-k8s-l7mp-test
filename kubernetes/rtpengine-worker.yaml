@@ -159,7 +159,7 @@ spec:
     name: worker-rtp-service-port
     protocol: UDP
     targetPort: 19000
-  - port: 19000
+  - port: 19001
     name: worker-rtcp-service-port
     protocol: UDP
     targetPort: 19001
