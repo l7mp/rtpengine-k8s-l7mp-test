@@ -42,7 +42,7 @@ sub new {
 		@v4 = grep {$_ !~ /^127\./} @v4;
 	}
 	@v4 = map { { address => $_, sockdomain => &AF_INET } } @v4;
-	@v4 or die("no IPv4 addresses found");
+	# @v4 or die("no IPv4 addresses found");
 
 	if ($ENV{RTPE_TEST_V6_ADDRS}) {
 		@v6 = split(/ /, $ENV{RTPE_TEST_V6_ADDRS});
@@ -53,7 +53,7 @@ sub new {
 		@v6 = grep {$_ !~ /^::|^fe80:/} @v6;
 	}
 	@v6 = map { { address => $_, sockdomain => &AF_INET6 } } @v6;
-	@v6 or die("no IPv6 addresses found");
+	# @v6 or die("no IPv6 addresses found");
 
 	$self->{v4_addresses} = \@v4;
 	$self->{v6_addresses} = \@v6;
