@@ -8,6 +8,7 @@ use IO::Socket;
 use Data::Dumper;
 # $Data::Dumper::Deepcopy=1;
 $Data::Dumper::Indent=1;
+
 use Getopt::Long;
 use Pod::Usage;
 
@@ -22,7 +23,7 @@ my $local_rtp_port_b  = 10002;
 
 my($man, $help, $verbose);
 GetOptions(
-    'rtpengine-host|h=s'         => \$rtpengine_host,
+    'rtpengine-host|r=s'         => \$rtpengine_host,
     'rtpengine-control-port|p=i' => \$rtpengine_ng_port,
     'local-ip-a=s'               => \$local_ip_a,
     'local-rtp-port-a=i'         => \$local_rtp_port_a,
@@ -31,7 +32,7 @@ GetOptions(
     'verbose|v+'                 => \$verbose,
     'help|?'                     => \$help,
     'man'                        => \$man,
-) or pod2usage(1);
+) or pod2usage(2);
 
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
@@ -78,3 +79,48 @@ $r->timer_once(10, sub { $r->stop(); });
 $r->run();
 
 $a->teardown(dump => 1);
+
+
+1;
+
+__END__
+
+=head1 NAME
+
+  rtp-call - Start an RTP call
+
+=head1 SYNOPSIS
+
+  rtp-call [--rtpengine-host|-r] [--rtpengine-control-port|-p] \
+           [--local-ip-a] [--local-rtp-port-a] \
+           [--local-ip-b] [--local-rtp-port-b]
+
+=head1 DESCRIPTION
+
+Start an RTP call via the given rtp-proxy.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--rtpengine-host|-r>
+
+=item B<--rtpengine-control-port|-p>
+
+=item B<--local-ip-a>
+
+=item B<--local-rtp-port-a>
+
+=item B<--local-ip-b> 
+
+=item B<--local-rtp-port-b>
+
+=item B<-v|--verbose>
+
+=item B<-help>
+
+=item B<-man>
+
+=back
+
+=cut
