@@ -57,7 +57,11 @@ $b->answer($a, ICE => 'remove', label => "callee");
 
 my $tag_a = $a->{tag};
 my $remote_media_a = $a->{remote_media};
-$remote_ip_a //= $remote_media_a->{connection}{address};
+if(defined $remote_ip_a){
+    $remote_media_a->{connection}{address} = $remote_ip_a;
+} else {
+    $remote_ip_a = $remote_media_a->{connection}{address};
+}
 my $remote_rtp_port_a  = $remote_media_a->{port};
 my $remote_rtcp_port_a = $remote_media_a->{rtcp_port};
 
@@ -65,7 +69,11 @@ say "Caller connection: RTP: ${local_ip_a}:${local_rtp_port_a} -> ${remote_ip_a}
 
 my $tag_b = $b->{tag};
 my $remote_media_b = $b->{remote_media};
-$remote_ip_b //= $remote_media_b->{connection}{address};
+if(defined $remote_ip_b){
+    $remote_media_b->{connection}{address} = $remote_ip_b;
+} else {
+    $remote_ip_b = $remote_media_b->{connection}{address};
+}
 my $remote_rtp_port_b  = $remote_media_b->{port};
 my $remote_rtcp_port_b = $remote_media_b->{rtcp_port};
 
