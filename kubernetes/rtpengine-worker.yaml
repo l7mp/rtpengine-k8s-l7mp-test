@@ -190,7 +190,7 @@ spec:
     rules:
       - action:
           route:
-            destinationRef: udp-ingress-rtpengine-ng-target
+            destinationRef: /apis/l7mp.io/v1/namespaces/default/targets/udp-ingress-rtpengine-ng-target
 
 ---
 
@@ -228,7 +228,7 @@ spec:
     rules:
       - action:
           route:
-            destinationRef: udp-worker-rtpengine-ng-target
+            destinationRef: /apis/l7mp.io/v1/namespaces/default/targets/udp-worker-rtpengine-ng-target
 
 ---
 
