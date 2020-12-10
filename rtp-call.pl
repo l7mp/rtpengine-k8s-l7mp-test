@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use feature qw/:all/;
 
+use IO::All;
 use IO::Socket;
 use Data::Dumper;
 # $Data::Dumper::Deepcopy=1;
@@ -22,8 +23,9 @@ my $local_rtp_port_a  = 10000;
 my $local_ip_b        = '127.0.0.1';
 my $remote_ip_b       = undef;
 my $local_rtp_port_b  = 10002;
-
+my $yaml_file         = '/tmp/rtp-config.yaml';
 my($man, $help, $verbose);
+
 GetOptions(
     'rtpengine-host|r=s'         => \$rtpengine_host,
     'rtpengine-control-port|p=i' => \$rtpengine_ng_port,
@@ -40,6 +42,9 @@ GetOptions(
 
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+
+
+# INIT RTP CALL
 
 my $local_rtcp_port_a = $local_rtp_port_a + 1;
 my $local_rtcp_port_b = $local_rtp_port_b + 1;
@@ -79,19 +84,451 @@ my $remote_rtcp_port_b = $remote_media_b->{rtcp_port};
 
 say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_ip_b}:${remote_rtp_port_b} / RTCP: ${local_ip_b}:${local_rtcp_port_b} -> ${remote_ip_b}:${remote_rtcp_port_b}";
 
+$r->timer_once(60, sub {
+                   $r->stop();
+                   system("kubectl delete -f $yaml_file");
+                   $? == -1 and die "failed to execute kubectl: $!\n";
+               });
+
+# INIT L7MP
+my $yaml = join("", <DATA>);
+# variable substitution
+$yaml =~ s/(\$\{\w+\})/$1/eeg;          # finds my() variables
+$yaml > io($yaml_file);
+
+system("kubectl apply -f $yaml_file");
+$? == -1 and die "failed to execute kubectl: $!\n";
+
+sleep(10);
+
+# START RTP/RTCP
+
 $a->start_rtp();
 $a->start_rtcp();
 $b->start_rtp();
 $b->start_rtcp();
 
-$r->timer_once(3, sub { $r->stop(); });
-
 $r->run();
 
 $a->teardown(dump => 1);
 
-
 1;
+
+__DATA__
+
+# RTP: A
+
+apiVersion: l7mp.io/v1
+kind: VirtualService
+metadata:
+  name: "ingress-rtp-vsvc-${callid}-${tag_a}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  listener:
+    spec:
+      UDP:
+        port: ${remote_rtp_port_a}
+        connect: { address: ${local_ip_a}, port: ${local_rtp_port_a} }
+        options:
+          mode: server
+    rules:
+      - action:
+          rewrite:
+            - path: "/labels/callid"
+              valueStr: "${callid}"
+            - path: "/labels/tag"
+              valueStr: ${tag_a}
+          route:
+            destinationRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-rtp-target-${callid}-${tag_a}"
+            retry:
+              retry_on: always
+              num_retries: 1000
+              timeout: 2000
+    options:
+      track: 600
+
+---
+
+kind: Target
+metadata:
+  name: "ingress-rtp-target-${callid}-${tag_a}"
+spec:
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  cluster:
+    spec:
+      JSONSocket:
+        transport:
+          UDP:
+            port: 19000
+        header:
+          - path: { from: "/labels", to: "/labels" }
+    endpoints:
+      - selector:
+          matchLabels:
+            app: l7mp-worker
+    loadbalancer:
+      policy: ConsistentHash
+      key: "/labels/callid"
+
+---
+
+apiVersion: l7mp.io/v1
+kind: Rule
+metadata:
+  name: "worker-rtp-rule-${callid}-${tag_a}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-worker
+  position: 0
+  rulelist: media-worker-rulelist
+  rule:
+    match:
+      op: and
+      apply:
+        - op: test
+          path: '/JSONSocket/labels/callid'
+          value: "${callid}"
+        - op: test
+          path: '/JSONSocket/labels/tag'
+          value: "${tag_a}"
+    action:
+      route:
+        destination:
+          spec:
+            UDP:
+              port: ${remote_rtp_port_a}
+              bind:
+                address: '127.0.0.1'
+                port: ${local_rtp_port_a}
+          endpoints:
+            - spec: { address: "127.0.0.1" }
+        ingress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+        egress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+        retry:
+          retry_on: always
+          num_retries: 5
+          timeout: 200
+
+---
+
+# RTP: B
+
+apiVersion: l7mp.io/v1
+kind: VirtualService
+metadata:
+  name: "ingress-rtp-vsvc-${callid}-${tag_b}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  listener:
+    spec:
+      UDP:
+        port: ${remote_rtp_port_b}
+        connect: { address: ${local_ip_b}, port: ${local_rtp_port_b} }
+        options:
+          mode: server
+    rules:
+      - action:
+          rewrite:
+            - path: "/labels/callid"
+              valueStr: "${callid}"
+            - path: "/labels/tag"
+              valueStr: ${tag_b}
+          route:
+            destinationRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-rtp-target-${callid}-${tag_b}"
+            retry:
+              retry_on: always
+              num_retries: 1000
+              timeout: 2000
+    options:
+      track: 600
+
+---
+
+kind: Target
+metadata:
+  name: "ingress-rtp-target-${callid}-${tag_b}"
+spec:
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  cluster:
+    spec:
+      JSONSocket:
+        transport:
+          UDP:
+            port: 19000
+        header:
+          - path: { from: "/labels", to: "/labels" }
+    endpoints:
+      - selector:
+          matchLabels:
+            app: l7mp-worker
+    loadbalancer:
+      policy: ConsistentHash
+      key: "/labels/callid"
+
+---
+
+apiVersion: l7mp.io/v1
+kind: Rule
+metadata:
+  name: "worker-rtp-rule-${callid}-${tag_b}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-worker
+  position: 0
+  rulelist: media-worker-rulelist
+  rule:
+    match:
+      op: and
+      apply:
+        - op: test
+          path: '/JSONSocket/labels/callid'
+          value: "${callid}"
+        - op: test
+          path: '/JSONSocket/labels/tag'
+          value: "${tag_b}"
+    action:
+      route:
+        destination:
+          spec:
+            UDP:
+              port: ${remote_rtp_port_b}
+              bind:
+                address: '127.0.0.1'
+                port: ${local_rtp_port_b}
+          endpoints:
+            - spec: { address: "127.0.0.1" }
+        ingress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+        egress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+        retry:
+          retry_on: always
+          num_retries: 5
+          timeout: 200
+
+---
+
+# RTCP: A
+
+apiVersion: l7mp.io/v1
+kind: VirtualService
+metadata:
+  name: "ingress-rtcp-vsvc-${callid}-${tag_a}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  listener:
+    spec:
+      UDP:
+        port: ${remote_rtcp_port_a}
+        connect: { address: ${local_ip_a}, port: ${local_rtcp_port_a} }
+        options:
+          mode: server
+    rules:
+      - action:
+          rewrite:
+            - path: "/labels/callid"
+              valueStr: "${callid}"
+            - path: "/labels/tag"
+              valueStr: ${tag_a}
+          route:
+            destinationRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-rtcp-target-${callid}-${tag_a}"
+            retry:
+              retry_on: always
+              num_retries: 1000
+              timeout: 2000
+    options:
+      track: 600
+
+---
+
+kind: Target
+metadata:
+  name: "ingress-rtcp-target-${callid}-${tag_a}"
+spec:
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  cluster:
+    spec:
+      JSONSocket:
+        transport:
+          UDP:
+            port: 19000
+        header:
+          - path: { from: "/labels", to: "/labels" }
+    endpoints:
+      - selector:
+          matchLabels:
+            app: l7mp-worker
+    loadbalancer:
+      policy: ConsistentHash
+      key: "/labels/callid"
+
+---
+
+apiVersion: l7mp.io/v1
+kind: Rule
+metadata:
+  name: "worker-rtcp-rule-${callid}-${tag_a}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-worker
+  position: 0
+  rulelist: media-worker-rulelist
+  rule:
+    match:
+      op: and
+      apply:
+        - op: test
+          path: '/JSONSocket/labels/callid'
+          value: "${callid}"
+        - op: test
+          path: '/JSONSocket/labels/tag'
+          value: "${tag_a}"
+    action:
+      route:
+        destination:
+          spec:
+            UDP:
+              port: ${remote_rtcp_port_a}
+              bind:
+                address: '127.0.0.1'
+                port: ${local_rtcp_port_a}
+          endpoints:
+            - spec: { address: "127.0.0.1" }
+        ingress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+        egress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+        retry:
+          retry_on: always
+          num_retries: 5
+          timeout: 200
+
+---
+
+# RTCP: B
+
+apiVersion: l7mp.io/v1
+kind: VirtualService
+metadata:
+  name: "ingress-rtcp-vsvc-${callid}-${tag_b}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  listener:
+    spec:
+      UDP:
+        port: ${remote_rtcp_port_b}
+        connect: { address: ${local_ip_b}, port: ${local_rtcp_port_b} }
+        options:
+          mode: server
+    rules:
+      - action:
+          rewrite:
+            - path: "/labels/callid"
+              valueStr: "${callid}"
+            - path: "/labels/tag"
+              valueStr: ${tag_b}
+          route:
+            destinationRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-rtcp-target-${callid}-${tag_b}"
+            retry:
+              retry_on: always
+              num_retries: 1000
+              timeout: 2000
+    options:
+      track: 600
+
+---
+
+kind: Target
+metadata:
+  name: "ingress-rtcp-target-${callid}-${tag_b}"
+spec:
+  selector:
+    matchLabels:
+      app: l7mp-ingress
+  cluster:
+    spec:
+      JSONSocket:
+        transport:
+          UDP:
+            port: 19000
+        header:
+          - path: { from: "/labels", to: "/labels" }
+    endpoints:
+      - selector:
+          matchLabels:
+            app: l7mp-worker
+    loadbalancer:
+      policy: ConsistentHash
+      key: "/labels/callid"
+
+---
+
+apiVersion: l7mp.io/v1
+kind: Rule
+metadata:
+  name: "worker-rtcp-rule-${callid}-${tag_b}"
+spec:
+  updateOwners: True
+  selector:
+    matchLabels:
+      app: l7mp-worker
+  position: 0
+  rulelist: media-worker-rulelist
+  rule:
+    match:
+      op: and
+      apply:
+        - op: test
+          path: '/JSONSocket/labels/callid'
+          value: "${callid}"
+        - op: test
+          path: '/JSONSocket/labels/tag'
+          value: "${tag_b}"
+    action:
+      route:
+        destination:
+          spec:
+            UDP:
+              port: ${remote_rtcp_port_b}
+              bind:
+                address: '127.0.0.1'
+                port: ${local_rtcp_port_b}
+          endpoints:
+            - spec: { address: "127.0.0.1" }
+        ingress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+        egress:
+          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+        retry:
+          retry_on: always
+          num_retries: 5
+          timeout: 200
 
 __END__
 
