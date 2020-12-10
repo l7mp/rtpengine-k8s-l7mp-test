@@ -40,6 +40,11 @@ data:
     rulelists:
       - name: media-worker-rulelist
         rules: []
+    clusters:
+      - name: ingress-metric-counter
+        spec: { protocol: Metric }
+      - name: egress-metric-counter
+        spec: { protocol: Metric }
 
 ---
 
