@@ -212,6 +212,7 @@ spec:
 
 ---
 
+apiVersion: l7mp.io/v1
 kind: Target
 metadata:
   name: "ingress-rtp-target-${callid}-${tag_a}"
@@ -316,6 +317,7 @@ spec:
 
 ---
 
+apiVersion: l7mp.io/v1
 kind: Target
 metadata:
   name: "ingress-rtp-target-${callid}-${tag_b}"
@@ -420,6 +422,7 @@ spec:
 
 ---
 
+apiVersion: l7mp.io/v1
 kind: Target
 metadata:
   name: "ingress-rtcp-target-${callid}-${tag_a}"
@@ -524,6 +527,7 @@ spec:
 
 ---
 
+apiVersion: l7mp.io/v1
 kind: Target
 metadata:
   name: "ingress-rtcp-target-${callid}-${tag_b}"
