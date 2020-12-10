@@ -70,7 +70,7 @@ sub new {
 
 	$self->{control} = NGCP::Rtpengine->new($args{host} // $ENV{RTPENGINE_HOST} // 'localhost',
 		$args{port} // $ENV{RTPENGINE_PORT} // 2223);
-	$self->{callid} = "id:" . int(rand(2**32));
+	$self->{callid} = "id-" . int(rand(2**32));
 
 	return $self;
 };
@@ -152,7 +152,7 @@ sub new {
 	bless $self, $class;
 
 	$self->{parent} = $parent;
-	$self->{tag} = "tag:" . int(rand(2**32));
+	$self->{tag} = "tag-" . int(rand(2**32));
 	$self->{codecs} = $args{codecs} // [qw(PCMU)];
 
 	# create media sockets
