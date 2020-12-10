@@ -91,7 +91,7 @@ $r->timer_once(60, sub {
                });
 
 # INIT L7MP
-my $yaml = join("", <DATA>);
+my $yaml = join("", <main::DATA>);
 # variable substitution
 $yaml =~ s/(\$\{\w+\})/$1/eeg;          # finds my() variables
 $yaml > io($yaml_file);
@@ -113,6 +113,66 @@ $r->run();
 $a->teardown(dump => 1);
 
 1;
+
+=head1 NAME
+
+  rtp-call - Start an RTP call
+
+=head1 SYNOPSIS
+
+  rtp-call [--rtpengine-host|-r] [--rtpengine-control-port|-p] \
+           [--local-ip-a] [--local-rtp-port-a] \
+           [--local-ip-b] [--local-rtp-port-b]
+
+=head1 DESCRIPTION
+
+Start an RTP call via the given rtp-proxy.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--rtpengine-host|-r>
+
+Rtpengine control channel IP.
+
+=item B<--rtpengine-control-port|-p>
+
+Rtpengine control channel port.
+
+=item B<--local-ip-a>
+
+Force local IP for caller.
+
+=item B<--remote-ip-a>
+
+Force remote IP for caller, override whatever was send by rtpengine.
+
+=item B<--local-rtp-port-a>
+
+Force local port for caller.
+
+=item B<--local-ip-b> 
+
+Force local IP for callee.
+
+=item B<--remote-ip-b> 
+
+Force remote IP for callee, override whatever was send by rtpengine.
+
+=item B<--local-rtp-port-b>
+
+Force local port for callee.
+
+=item B<-v|--verbose>
+
+=item B<-help>
+
+=item B<-man>
+
+=back
+
+=cut
 
 __DATA__
 
@@ -529,65 +589,3 @@ spec:
           retry_on: always
           num_retries: 5
           timeout: 200
-
-__END__
-
-=head1 NAME
-
-  rtp-call - Start an RTP call
-
-=head1 SYNOPSIS
-
-  rtp-call [--rtpengine-host|-r] [--rtpengine-control-port|-p] \
-           [--local-ip-a] [--local-rtp-port-a] \
-           [--local-ip-b] [--local-rtp-port-b]
-
-=head1 DESCRIPTION
-
-Start an RTP call via the given rtp-proxy.
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<--rtpengine-host|-r>
-
-Rtpengine control channel IP.
-
-=item B<--rtpengine-control-port|-p>
-
-Rtpengine control channel port.
-
-=item B<--local-ip-a>
-
-Force local IP for caller.
-
-=item B<--remote-ip-a>
-
-Force remote IP for caller, override whatever was send by rtpengine.
-
-=item B<--local-rtp-port-a>
-
-Force local port for caller.
-
-=item B<--local-ip-b> 
-
-Force local IP for callee.
-
-=item B<--remote-ip-b> 
-
-Force remote IP for callee, override whatever was send by rtpengine.
-
-=item B<--local-rtp-port-b>
-
-Force local port for callee.
-
-=item B<-v|--verbose>
-
-=item B<-help>
-
-=item B<-man>
-
-=back
-
-=cut
