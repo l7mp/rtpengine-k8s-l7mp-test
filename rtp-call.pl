@@ -271,9 +271,9 @@ spec:
           endpoints:
             - spec: { address: "127.0.0.1" }
         ingress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+          - clusterRef: "ingress-metric-counter"
         egress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+          - clusterRef: "egress-metric-counter"
         retry:
           retry_on: always
           num_retries: 5
@@ -376,9 +376,9 @@ spec:
           endpoints:
             - spec: { address: "127.0.0.1" }
         ingress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+          - clusterRef: "ingress-metric-counter"
         egress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+          - clusterRef: "egress-metric-counter"
         retry:
           retry_on: always
           num_retries: 5
@@ -481,9 +481,9 @@ spec:
           endpoints:
             - spec: { address: "127.0.0.1" }
         ingress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+          - clusterRef: "ingress-metric-counter"
         egress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+          - clusterRef: "egress-metric-counter"
         retry:
           retry_on: always
           num_retries: 5
@@ -586,9 +586,9 @@ spec:
           endpoints:
             - spec: { address: "127.0.0.1" }
         ingress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/ingress-metric-counter"
+          - clusterRef: "ingress-metric-counter"
         egress:
-          - clusterRef: "/apis/l7mp.io/v1/namespaces/default/targets/egress-metric-counter"
+          - clusterRef: "egress-metric-counter"
         retry:
           retry_on: always
           num_retries: 5
