@@ -406,7 +406,8 @@ sub _input {
 		}
 
 		my $exp = shift(@{$self->{media_receive_queues}->[$component]}) or die;
-		$$input eq $exp or die unpack('H*', $$input) . ' ne ' . unpack('H*', $exp);
+		$$input eq $exp or warn "Received payload does not match send payload:\n" .
+                    "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
 	}
 	else {
 		@{$self->{media_receive_queues}->[$component]} = ();
