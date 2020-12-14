@@ -448,7 +448,7 @@ sub _input {
 
 		my $exp = shift(@{$self->{media_receive_queues}->[$component]});
                 if($exp){
-                    $$input eq $exp or warn "WARNING: Received payload does not match the payload expected:\n" .
+                    $$input eq $exp or warn "WARNING: Received payload does not match the payload expected for component $component:\n" .
                         "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
                 } else {
                     warn __PACKAGE__ . "::_input: media_receive_queues empty for component: $component";
