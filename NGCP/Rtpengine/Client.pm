@@ -157,7 +157,7 @@ sub mux_input {
 
 	unless($$input eq ''){
             warn __PACKAGE__ . "::mux_input: non-empty input: <" .
-                unpack('H*', $packet) . ">";
+                unpack('H*', $$input) . ">";
             $$input = '';
         }
 }
