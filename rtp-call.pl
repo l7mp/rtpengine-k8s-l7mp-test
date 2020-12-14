@@ -24,6 +24,7 @@ my $local_ip_b        = '127.0.0.1';
 my $remote_ip_b       = undef;
 my $local_rtp_port_b  = 10002;
 my $yaml_file         = '/tmp/rtp-config.yaml';
+my $no_k8s            = 0;
 my($man, $help, $verbose);
 
 GetOptions(
@@ -35,6 +36,7 @@ GetOptions(
     'local-ip-b=s'               => \$local_ip_b,
     'remote-ip-b=s'              => \$remote_ip_b,
     'local-rtp-port-b=i'         => \$local_rtp_port_b,
+    'no-k8s|n'                   => \$no_k8s,
     'verbose|v+'                 => \$verbose,
     'help|?'                     => \$help,
     'man'                        => \$man,
@@ -84,22 +86,25 @@ my $remote_rtcp_port_b = $remote_media_b->{rtcp_port};
 
 say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_ip_b}:${remote_rtp_port_b} / RTCP: ${local_ip_b}:${local_rtcp_port_b} -> ${remote_ip_b}:${remote_rtcp_port_b}";
 
-$r->timer_once(60, sub {
+$r->timer_once(30, sub {
                    $r->stop();
-                   system("kubectl delete -f $yaml_file");
-                   $? == -1 and die "failed to execute kubectl: $!\n";
+                   unless($no_k8s){
+                       system("kubectl delete -f $yaml_file");
+                       $? == -1 and die "failed to execute kubectl: $!\n";
+                   }
                });
 
-# INIT L7MP
-my $yaml = join("", <main::DATA>);
-# variable substitution
-$yaml =~ s/(\$\{\w+\})/$1/eeg;          # finds my() variables
-$yaml > io($yaml_file);
+unless($no_k8s){
+    # INIT L7MP
+    my $yaml = join("", <main::DATA>);
+    # variable substitution
+    $yaml =~ s/(\$\{\w+\})/$1/eeg;          # finds my() variables
+    $yaml > io($yaml_file);
 
-system("kubectl apply -f $yaml_file");
-$? == -1 and die "failed to execute kubectl: $!\n";
-
-sleep(10);
+    system("kubectl apply -f $yaml_file");
+    $? == -1 and die "failed to execute kubectl: $!\n";
+    sleep(10);
+}
 
 # START RTP/RTCP
 
