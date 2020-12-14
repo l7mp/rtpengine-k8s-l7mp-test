@@ -16,6 +16,7 @@ sub input {
     ($vprc & 0xe0) == 0x80 or die "RTCP: Version mismatch";
     my $rc = ($vprc & 0x1f);
     $rc > 1 and die "RTCP: Reception report count > 1: <" . unpack('H*', $packet) . ">";
+    print "RTCP: Original packet length: $len, PT=$pt\n";
     $len++;
     $len <<= 2;
     $len == length($packet) or
