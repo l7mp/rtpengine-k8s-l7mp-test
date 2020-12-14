@@ -25,6 +25,7 @@ my $remote_ip_b       = undef;
 my $local_rtp_port_b  = 10002;
 my $yaml_file         = '/tmp/rtp-config.yaml';
 my $no_k8s            = 0;
+my $holding_time      = 30;
 my($man, $help, $verbose);
 
 GetOptions(
@@ -36,6 +37,7 @@ GetOptions(
     'local-ip-b=s'               => \$local_ip_b,
     'remote-ip-b=s'              => \$remote_ip_b,
     'local-rtp-port-b=i'         => \$local_rtp_port_b,
+    'holding-time|t=i'           => \$holding_time,
     'no-k8s|n'                   => \$no_k8s,
     'verbose|v+'                 => \$verbose,
     'help|?'                     => \$help,
@@ -90,7 +92,7 @@ my $remote_rtcp_port_b = $remote_media_b->{rtcp_port};
 
 say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_ip_b}:${remote_rtp_port_b} / RTCP: ${local_ip_b}:${local_rtcp_port_b} -> ${remote_ip_b}:${remote_rtcp_port_b}";
 
-$r->timer_once(30, sub {
+$r->timer_once($holding_time, sub {
                    $r->stop();
                    unless($no_k8s){
                        system("kubectl delete -f $yaml_file");
@@ -107,7 +109,7 @@ unless($no_k8s){
 
     system("kubectl apply -f $yaml_file");
     $? == -1 and die "failed to execute kubectl: $!\n";
-    sleep(10);
+    sleep(5);
 }
 
 # START RTP/RTCP
