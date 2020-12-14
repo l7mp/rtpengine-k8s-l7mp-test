@@ -53,8 +53,9 @@ my $local_rtcp_port_b = $local_rtp_port_b + 1;
 
 my $r = NGCP::Rtpengine::Call->new(
     host => $rtpengine_host,
-    port => $rtpengine_ng_port
-    no_data_check => 1);
+    port => $rtpengine_ng_port,
+    no_data_check => 1
+);
 my $callid = $r->{callid};
 
 my $a = $r->client(sockdomain => &Socket::AF_INET, address => {address => $local_ip_a}, port => $local_rtp_port_a);
