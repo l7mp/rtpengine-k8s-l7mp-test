@@ -1,3 +1,5 @@
+# Call with caller and callee
+
 package NGCP::Rtpengine::Call;
 
 use strict;
@@ -270,6 +272,7 @@ sub _packet_send {
 
 	$local_socket->send($s, 0, $dest);
 }
+
 sub _media_send {
 	my ($self, $component, $s) = @_;
 	$self->_packet_send($component, $s);
@@ -406,7 +409,7 @@ sub _input {
 		}
 
 		my $exp = shift(@{$self->{media_receive_queues}->[$component]}) or die;
-		$$input eq $exp or warn "Received payload does not match send payload:\n" .
+		$$input eq $exp or warn "WARNING: Received payload does not match the payload expected:\n" .
                     "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
 	}
 	else {
@@ -455,7 +458,7 @@ sub start_rtp {
 sub start_rtcp {
 	my ($self) = @_;
 	$self->{rtcp} and die;
-	$self->{rtcp} = NGCP::Rtpclient::RTCP->new($self, $self->{rtp}) or die;
+	$self->{rtcp} = NGCP::Client::RTCP->new($self, $self->{rtp}) or die;
 	$self->{client_components}->[1] = $self->{rtcp};
 }
 
@@ -479,4 +482,35 @@ sub send_codecs {
 	return join(',', map {"$_->{name}/$_->{clockrate}/$_->{channels}"} @$list);
 }
 
+# MUST override input
+
+package NGCP::Client::RTCP;
+
+use strict;
+use warnings;
+
+use parent 'NGCP::Rtpclient::RTCP';
+
+sub input {
+	my ($self, $packet) = @_;
+
+	my ($vprc, $pt, $len, $rest) = unpack('CCn a*', $packet);
+	($vprc & 0xe0) == 0x80 or die "RTCP: Version mismatch";
+	my $rc = ($vprc & 0x1f);
+	$rc > 1 and die "RTCP: Reception report count > 1";
+	$len++;
+	$len <<= 2;
+	unless($len == length($packet)){
+            warn "RTCP: length mismatch: $len != " . length($packet);
+            return;
+        }
+
+	if ($pt == 200) {
+		my ($ssrc, @sr) = unpack('NNNNNN', $rest);
+		$self->{last_sr}->{$ssrc} = { received_time => time(), packet => \@sr };
+	}
+}
+
+
 1;
+
