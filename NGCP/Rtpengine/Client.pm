@@ -18,10 +18,8 @@ sub input {
     $rc > 1 and die "RTCP: Reception report count > 1: <$packet>";
     $len++;
     $len <<= 2;
-    unless($len == length($packet)){
+    $len == length($packet) or
         warn "RTCP: length mismatch: $len != " . length($packet) . ": <$packet>";
-        return;
-    }
 
     if ($pt == 200) {
         my ($ssrc, @sr) = unpack('NNNNNN', $rest);
