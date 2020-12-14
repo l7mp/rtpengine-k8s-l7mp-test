@@ -315,6 +315,7 @@ sub _media_send {
 	my ($self, $component, $s) = @_;
 	$self->_packet_send($component, $s);
 	$self->{media_packets_sent}->[$component]++;
+        print __PACKAGE__ . "::_media_send: Sending for component $component: <" . unpack('H*', $s) . ">\n";
 	$self->{media_receiver} and $self->{media_receiver}->media_to_receive($component, $s);
 }
 
