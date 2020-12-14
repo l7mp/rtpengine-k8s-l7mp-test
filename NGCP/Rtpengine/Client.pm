@@ -155,8 +155,11 @@ sub mux_input {
 		$cl->_input($fh, $input, $peer);
 	}
 
-	$$input ne '' and warn __PACKEGE:: . "mux_input: non-empty input: <" .
-            unpack('H*', $packet) . ">";
+	unless($$input eq ''){
+            warn __PACKEGE:: . "mux_input: non-empty input: <" .
+                unpack('H*', $packet) . ">";
+            $$input = '';
+        }
 }
 
 sub mux_timeout {
