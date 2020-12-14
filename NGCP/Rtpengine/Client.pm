@@ -156,7 +156,7 @@ sub mux_input {
 	}
 
 	unless($$input eq ''){
-            warn __PACKEGE:: . "mux_input: non-empty input: <" .
+            warn __PACKAGE:: . "mux_input: non-empty input: <" .
                 unpack('H*', $packet) . ">";
             $$input = '';
         }
