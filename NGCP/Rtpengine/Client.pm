@@ -15,11 +15,11 @@ sub input {
     my ($vprc, $pt, $len, $rest) = unpack('CCn a*', $packet);
     ($vprc & 0xe0) == 0x80 or die "RTCP: Version mismatch";
     my $rc = ($vprc & 0x1f);
-    $rc > 1 and die "RTCP: Reception report count > 1: <$packet>";
+    $rc > 1 and die "RTCP: Reception report count > 1: <" . unpack('H*', $packet) . ">";
     $len++;
     $len <<= 2;
     $len == length($packet) or
-        warn "RTCP: length mismatch: $len != " . length($packet) . ": <$packet>";
+        warn "RTCP: length mismatch: $len != " . length($packet) . " <" . unpack('H*', $packet) . ">";
 
     if ($pt == 200) {
         my ($ssrc, @sr) = unpack('NNNNNN', $rest);
@@ -441,10 +441,15 @@ sub _input {
 			$$input = $self->{srtp}->decrypt($component, $$input);
 		}
 
-		my $exp = shift(@{$self->{media_receive_queues}->[$component]}) or die;
-		$$input eq $exp or warn "WARNING: Received payload does not match the payload expected:\n" .
-                    "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
-	}
+		my $exp = shift(@{$self->{media_receive_queues}->[$component]});
+                if($exp){
+                    $$input eq $exp or warn "WARNING: Received payload does not match the payload expected:\n" .
+                        "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
+                } else {
+                    warn __PACKAGE__ . "::_input: media_receive_queues empty for component: $component";
+                    return;
+                }
+            }
 	else {
 		@{$self->{media_receive_queues}->[$component]} = ();
 	}
