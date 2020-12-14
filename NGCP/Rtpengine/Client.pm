@@ -452,6 +452,7 @@ sub _input {
                         "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
                 } else {
                     warn __PACKAGE__ . "::_input: media_receive_queues empty for component: $component";
+                    $$input = '';
                     return;
                 }
             }
