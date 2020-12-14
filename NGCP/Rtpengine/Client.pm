@@ -1,3 +1,36 @@
+# MUST override input
+
+package NGCP::Client::RTCP;
+
+use strict;
+use warnings;
+
+use parent 'NGCP::Rtpclient::RTCP';
+
+sub input {
+    my ($self, $packet) = @_;
+
+    print "This is NGCP::Client::RTCP\n";
+
+    my ($vprc, $pt, $len, $rest) = unpack('CCn a*', $packet);
+    ($vprc & 0xe0) == 0x80 or die "RTCP: Version mismatch";
+    my $rc = ($vprc & 0x1f);
+    $rc > 1 and die "RTCP: Reception report count > 1: <$packet>";
+    $len++;
+    $len <<= 2;
+    unless($len == length($packet)){
+        warn "RTCP: length mismatch: $len != " . length($packet) . ": <$packet>";
+        return;
+    }
+
+    if ($pt == 200) {
+        my ($ssrc, @sr) = unpack('NNNNNN', $rest);
+        $self->{last_sr}->{$ssrc} = { received_time => time(), packet => \@sr };
+    }
+}
+
+1;
+
 # Call with caller and callee
 
 package NGCP::Rtpengine::Call;
@@ -19,8 +52,10 @@ use NGCP::Rtpclient::ICE;
 use NGCP::Rtpclient::SDES;
 use NGCP::Rtpclient::DTLS;
 use NGCP::Rtpclient::RTP;
-use NGCP::Rtpclient::RTCP;
+# use NGCP::Rtpclient::RTCP;
 use NGCP::Rtpengine;
+
+# use NGCP::Client::RTCP;
 
 sub new {
 	my ($class, %args) = @_;
@@ -481,36 +516,6 @@ sub send_codecs {
 	my $list = $self->{local_media}->{codecs_send};
 	return join(',', map {"$_->{name}/$_->{clockrate}/$_->{channels}"} @$list);
 }
-
-# MUST override input
-
-package NGCP::Client::RTCP;
-
-use strict;
-use warnings;
-
-use parent 'NGCP::Rtpclient::RTCP';
-
-sub input {
-	my ($self, $packet) = @_;
-
-	my ($vprc, $pt, $len, $rest) = unpack('CCn a*', $packet);
-	($vprc & 0xe0) == 0x80 or die "RTCP: Version mismatch";
-	my $rc = ($vprc & 0x1f);
-	$rc > 1 and die "RTCP: Reception report count > 1";
-	$len++;
-	$len <<= 2;
-	unless($len == length($packet)){
-            warn "RTCP: length mismatch: $len != " . length($packet);
-            return;
-        }
-
-	if ($pt == 200) {
-		my ($ssrc, @sr) = unpack('NNNNNN', $rest);
-		$self->{last_sr}->{$ssrc} = { received_time => time(), packet => \@sr };
-	}
-}
-
 
 1;
 
