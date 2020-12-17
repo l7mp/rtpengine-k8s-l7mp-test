@@ -203,7 +203,7 @@ sub new {
 
         my $rtp = IO::Socket::IP->new(Type => &SOCK_DGRAM, Proto => 'udp',
                                       LocalHost => $address->{address}, LocalPort => $port)
-            or die("Failed to set up RTP client socket: $address->{address}:$parent->{media_port}: $!");
+            or die("Failed to set up RTP client socket: $address->{address}:${port}: $!");
         $port++;
         my $rtcp = IO::Socket::IP->new(Type => &SOCK_DGRAM, Proto => 'udp',
                                        LocalHost => $address->{address}, LocalPort => $port)
@@ -315,7 +315,8 @@ sub _media_send {
 	my ($self, $component, $s) = @_;
 	$self->_packet_send($component, $s);
 	$self->{media_packets_sent}->[$component]++;
-        print __PACKAGE__ . "::_media_send: Sending for component $component: <" . unpack('H*', $s) . ">\n";
+        print __PACKAGE__ . "::_media_send: " . $self->{args}{address}{address} . ":" .
+            $self->{args}{port} . ", component $component: <" . unpack('H*', $s) . ">\n";
 	$self->{media_receiver} and $self->{media_receiver}->media_to_receive($component, $s);
 }
 
