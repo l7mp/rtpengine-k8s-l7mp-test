@@ -448,16 +448,21 @@ sub _input {
 			$$input = $self->{srtp}->decrypt($component, $$input);
 		}
 
+                my $address = $fh->sockhost;
+                my $port = $fh->sockport;
 		my $exp = shift(@{$self->{media_receive_queues}->[$component]});
                 if($exp){
                     if($$input eq $exp){
-                        print __PACKAGE__ . "::_input: Payload OK for component $component\n";
+                        print __PACKAGE__ . "::_input: Payload OK for $address:$port, component $component\n";
                     } else{
-                        warn "WARNING: Received payload does not match the payload expected for component $component:\n" .
-                            "<" . unpack('H*', $$input) . '> ne <' . unpack('H*', $exp) . ">";
+                        warn "WARNING: Received payload does not match the payload expected for
+                            $address:$port component $component:\n" .  "<" . unpack('H*', $$input)
+                            . '> ne <' . unpack('H*', $exp) . ">";
                     }
                 } else {
-                    warn __PACKAGE__ . "::_input: media_receive_queues empty for component: $component";
+
+                    warn __PACKAGE__ . "::_input: media_receive_queues empty for $address:$port, " .
+                      "component: $component";
                     $$input = '';
                     return;
                 }
