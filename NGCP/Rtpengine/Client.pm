@@ -315,8 +315,12 @@ sub _media_send {
 	my ($self, $component, $s) = @_;
 	$self->_packet_send($component, $s);
 	$self->{media_packets_sent}->[$component]++;
-        print __PACKAGE__ . "::_media_send: " . $self->{args}{address}{address} . ":" .
-            $self->{args}{port} . ", component $component: <" . unpack('H*', $s) . ">\n";
+
+	my $local_socket = $self->{main_sockets}->[$component];
+        my $local_addr = $local_socket->sockhost . ":" . $local_socket->sockport;
+        my $peer_addr  = $local_socket->peerhost . ":" . $local_socket->peerport;
+        print __PACKAGE__ . "::_media_send: $local_addr -> $peer_addr, component $component: <" .
+            unpack('H*', $s) . ">\n";
 	$self->{media_receiver} and $self->{media_receiver}->media_to_receive($component, $s);
 }
 
@@ -448,21 +452,23 @@ sub _input {
 			$$input = $self->{srtp}->decrypt($component, $$input);
 		}
 
-                my $address = $fh->sockhost;
-                my $port = $fh->sockport;
+                my $local_addr = $fh->sockhost . ":" . $fh->sockport;
+                my $peer_addr  = $fh->peerhost . ":" . $fh->peerport;
 		my $exp = shift(@{$self->{media_receive_queues}->[$component]});
                 if($exp){
                     if($$input eq $exp){
-                        print __PACKAGE__ . "::_input: Payload OK for $address:$port, component $component\n";
+                        print __PACKAGE__ . "::_input: Payload OK: $peer_addr -> $local_addr, component $component: <" .
+                            unpack('H*', $exp) . ">\n";
                     } else{
-                        warn "WARNING: Received payload does not match the payload expected for
-                            $address:$port component $component:\n" .  "<" . unpack('H*', $$input)
-                            . '> ne <' . unpack('H*', $exp) . ">";
+                        warn "WARNING: Received payload does not match the payload expected for " .
+                            "$peer_addr -> $local_addr, component $component:\n" .
+                            "  Received: <" . unpack('H*', $$input)
+                            . '>\n  Expected: <' . unpack('H*', $exp) . ">";
                     }
                 } else {
 
-                    warn __PACKAGE__ . "::_input: media_receive_queues empty for $address:$port, " .
-                      "component: $component";
+                    warn __PACKAGE__ . "::_input: media_receive_queues empty for " .
+                        "$peer_addr -> $local_addr, component $component:\n";
                     $$input = '';
                     return;
                 }
