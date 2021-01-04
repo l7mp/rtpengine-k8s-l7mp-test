@@ -448,14 +448,17 @@ sub _input {
 	defined($component) or return; # not one of ours
 
 	# must be RTP or RTCP input
+        my $local_addr = $fh->sockhost . ":" . $fh->sockport;
+        my $peer_addr  = $fh->peerhost . ":" . $fh->peerport;
+        print __PACKAGE__ . "::_input: Received packet: $peer_addr -> $local_addr, component $component: <" .
+            unpack('H*', $exp) . ">\n";
+
         # RG: omit RTCP
 	if ($component == 0 && !$self->{args}->{no_data_check}) {
 		if ($self->{srtp}) {
 			$$input = $self->{srtp}->decrypt($component, $$input);
 		}
 
-                my $local_addr = $fh->sockhost . ":" . $fh->sockport;
-                my $peer_addr  = $fh->peerhost . ":" . $fh->peerport;
 		my $exp = shift(@{$self->{media_receive_queues}->[$component]});
                 if($exp){
                     if($$input eq $exp){
