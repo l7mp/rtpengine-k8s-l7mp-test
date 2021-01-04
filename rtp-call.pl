@@ -93,11 +93,10 @@ my $remote_rtcp_port_b = $remote_media_b->{rtcp_port};
 say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_ip_b}:${remote_rtp_port_b} / RTCP: ${local_ip_b}:${local_rtcp_port_b} -> ${remote_ip_b}:${remote_rtcp_port_b}";
 
 $r->timer_once($holding_time, sub {
-                   $r->stop();
-
-                   print "Press ENTER to delete k8s rules:";
+                   print "Press ENTER to delete call:";
                    <STDIN>;
 
+                   $r->stop();
                    unless($no_k8s){
                        system("kubectl delete -f $yaml_file");
                        $? == -1 and die "failed to execute kubectl: $!\n";
