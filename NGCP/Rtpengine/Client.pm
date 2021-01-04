@@ -448,7 +448,8 @@ sub _input {
 	defined($component) or return; # not one of ours
 
 	# must be RTP or RTCP input
-	if (!$self->{args}->{no_data_check}) {
+        # RG: omit RTCP
+	if ($component == 0 && !$self->{args}->{no_data_check}) {
 		if ($self->{srtp}) {
 			$$input = $self->{srtp}->decrypt($component, $$input);
 		}
