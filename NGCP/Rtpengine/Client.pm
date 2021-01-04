@@ -451,7 +451,7 @@ sub _input {
         my $local_addr = $fh->sockhost . ":" . $fh->sockport;
         my $peer_addr  = $fh->peerhost . ":" . $fh->peerport;
         print __PACKAGE__ . "::_input: Received packet: $peer_addr -> $local_addr, component $component: <" .
-            unpack('H*', $exp) . ">\n";
+            unpack('H*', $$input) . ">\n";
 
         # RG: omit RTCP
 	if ($component == 0 && !$self->{args}->{no_data_check}) {
