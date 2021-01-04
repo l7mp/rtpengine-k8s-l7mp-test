@@ -468,7 +468,7 @@ sub _input {
 
                         # we've lost a packet or two, got out of sync, try to re-sync
                         while($exp = shift(@{$self->{media_receive_queues}->[$component]})){
-                            $self->{media_packets_lost}++;
+                            $self->{media_packets_lost}[$component]++;
                             $$input eq $exp and last;
                         }
 
