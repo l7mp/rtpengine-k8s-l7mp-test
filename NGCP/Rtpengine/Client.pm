@@ -260,6 +260,7 @@ sub new {
 	$self->{media_receive_queues} = [[],[]]; # for each component
 	$self->{media_packets_sent} = [0,0];
 	$self->{media_packets_received} = [0,0];
+	$self->{media_packets_lost} = [0,0];
 	$self->{client_components} = [undef,undef];
 
 	$self->{args} = \%args;
@@ -464,9 +465,17 @@ sub _input {
                             "$peer_addr -> $local_addr, component $component:\n" .
                             "  Received: <" . unpack('H*', $$input)
                             . '>\n  Expected: <' . unpack('H*', $exp) . ">";
+
+                        # we've lost a packet or two, got out of sync, try to re-sync
+                        while($exp = shift(@{$self->{media_receive_queues}->[$component]})){
+                            $self->{media_packets_lost}++;
+                            $$input eq $exp and last;
+                        }
+
+                        $$input = '';
+                        return;
                     }
                 } else {
-
                     warn __PACKAGE__ . "::_input: media_receive_queues empty for " .
                         "$peer_addr -> $local_addr, component $component:\n";
                     $$input = '';
@@ -527,6 +536,7 @@ sub stop {
 	my ($self) = @_;
 	print("media packets sent: @{$self->{media_packets_sent}}\n");
 	print("media packets received: @{$self->{media_packets_received}}\n");
+	print("media packets lost: @{$self->{media_packets_lost}}\n");
 	my @queues = map {scalar(@$_)} @{$self->{media_receive_queues}};
 	print("media packets outstanding: @queues\n");
 }
