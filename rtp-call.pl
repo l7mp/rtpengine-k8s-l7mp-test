@@ -94,6 +94,10 @@ say "Callee connection: RTP: ${local_ip_b}:${local_rtp_port_b} -> ${remote_ip_b}
 
 $r->timer_once($holding_time, sub {
                    $r->stop();
+
+                   print "Press ENTER to delete k8s rules:";
+                   <STDIN>;
+
                    unless($no_k8s){
                        system("kubectl delete -f $yaml_file");
                        $? == -1 and die "failed to execute kubectl: $!\n";
@@ -163,11 +167,11 @@ Force remote IP for caller, override whatever was send by rtpengine.
 
 Force local port for caller.
 
-=item B<--local-ip-b> 
+=item B<--local-ip-b>
 
 Force local IP for callee.
 
-=item B<--remote-ip-b> 
+=item B<--remote-ip-b>
 
 Force remote IP for callee, override whatever was send by rtpengine.
 
