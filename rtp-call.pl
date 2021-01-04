@@ -65,8 +65,8 @@ my $b = $r->client(sockdomain => &Socket::AF_INET, address => {address => $local
 $a->{media_receiver} = $b;
 $b->{media_receiver} = $a;
 
-$a->offer($b, ICE => 'remove', label => "caller");
-$b->answer($a, ICE => 'remove', label => "callee");
+$a->offer($b,  ICE => 'remove', 'media address' => '127.0.0.1', label => "caller");
+$b->answer($a, ICE => 'remove', 'media address' => '127.0.0.1', label => "callee");
 
 my $tag_a = $a->{tag};
 my $remote_media_a = $a->{remote_media};

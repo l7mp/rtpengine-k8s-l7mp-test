@@ -59,7 +59,7 @@ data:
     # access only via the sidecar proxy
     # listen-ng=MY_IP:22222
     # interface=MY_IP
-    listen-ng = 127.0.0.1:22222
+    listen-ng=127.0.0.1:22222
     interface=lo
 
     foreground=true
