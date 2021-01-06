@@ -17,11 +17,18 @@ data:
               route:
                 destination:
                   spec: { protocol: L7mpController }
-      - name: media-worker-listener
+      - name: worker-rtp-listener
         spec:
           protocol: JSONSocket
           transport: { protocol: UDP, port: 19000 }
-        rules: media-worker-rulelist
+        rules: worker-rtp-rulelist
+        options:
+          track: 3600 # 1 hour
+      - name: worker-rtcp-listener
+        spec:
+          protocol: JSONSocket
+          transport: { protocol: UDP, port: 19001 }
+        rules: worker-rtcp-rulelist
         options:
           track: 3600 # 1 hour
       # - name: rtpengine-listener
@@ -38,7 +45,9 @@ data:
       #             endpoints:
       #               - { spec: { address: "127.0.0.1" } }
     rulelists:
-      - name: media-worker-rulelist
+      - name: worker-rtp-rulelist
+        rules: []
+      - name: worker-rtcp-rulelist
         rules: []
     clusters:
       - name: ingress-metric-counter

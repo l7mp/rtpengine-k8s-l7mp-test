@@ -262,7 +262,7 @@ spec:
     matchLabels:
       app: l7mp-worker
   position: 0
-  rulelist: media-worker-rulelist
+  rulelist: worker-rtp-rulelist
   rule:
     match:
       op: and
@@ -367,7 +367,7 @@ spec:
     matchLabels:
       app: l7mp-worker
   position: 0
-  rulelist: media-worker-rulelist
+  rulelist: worker-rtp-rulelist
   rule:
     match:
       op: and
@@ -449,7 +449,7 @@ spec:
       JSONSocket:
         transport:
           UDP:
-            port: 19000
+            port: 19001
         header:
           - path: { from: "/labels", to: "/labels" }
     endpoints:
@@ -472,7 +472,7 @@ spec:
     matchLabels:
       app: l7mp-worker
   position: 0
-  rulelist: media-worker-rulelist
+  rulelist: worker-rtcp-rulelist
   rule:
     match:
       op: and
@@ -494,10 +494,6 @@ spec:
                 port: ${local_rtcp_port_a}
           endpoints:
             - spec: { address: "127.0.0.1" }
-        ingress:
-          - clusterRef: "ingress-metric-counter"
-        egress:
-          - clusterRef: "egress-metric-counter"
         retry:
           retry_on: always
           num_retries: 5
@@ -554,7 +550,7 @@ spec:
       JSONSocket:
         transport:
           UDP:
-            port: 19000
+            port: 19001
         header:
           - path: { from: "/labels", to: "/labels" }
     endpoints:
@@ -577,7 +573,7 @@ spec:
     matchLabels:
       app: l7mp-worker
   position: 0
-  rulelist: media-worker-rulelist
+  rulelist: worker-rtcp-rulelist
   rule:
     match:
       op: and
@@ -599,10 +595,6 @@ spec:
                 port: ${local_rtcp_port_b}
           endpoints:
             - spec: { address: "127.0.0.1" }
-        ingress:
-          - clusterRef: "ingress-metric-counter"
-        egress:
-          - clusterRef: "egress-metric-counter"
         retry:
           retry_on: always
           num_retries: 5
