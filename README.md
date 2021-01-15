@@ -24,26 +24,25 @@ Clone `rtpengine`, `l7mp`, and the k8s/l7mp test suite:
 
 ``` sh
 git clone https://github.com/sipwise/rtpengine.git
-cd rtpengine
-export RTPENGINE_DIR=$(pwd)
-cd ../
+export RTPENGINE_DIR=$(pwd)/rtpengine
 git clone https://github.com/l7mp/l7mp.git
 git clone https://github.com/l7mp/l7mp/rtpengine-k8s-l7mp-test
 ```
 
-Build latest l7mp proxy locally (may need this to use some unstable features) and fire up the operator+gateway:
+Build the latest l7mp proxy locally (may need this to use some unstable features) and fire up the operator+gateway:
 
 ``` sh
 cd l7mp
 git reset --hard HEAD
 docker build -t l7mp/l7mp:0.5.7 -t l7mp/l7mp:latest .
 helm install --set l7mpProxyImage.pullPolicy=Never l7mp/l7mp-ingress --generate-name 
+cd ..
 ```
 
-Install the worker, fire up rtpengine at each worker pod (note that the local rtpengine build is _not_ used, rather the `drachtio/rtpengine` container image is used; this can be set to an arbitrary image in `kubernetes/rtpengine-worker.yaml`), and init the l7mp service mesh: 
+Install the worker, fire up rtpengine at each worker pod (note that the local rtpengine build is _not_ used, rather the `drachtio/rtpengine` container image is loaded; this can be set to an arbitrary image in `kubernetes/rtpengine-worker.yaml`), and init the l7mp service mesh: 
 
 ``` sh
-cd ../rtpengine-k8s-l7mp-test
+cd rtpengine-k8s-l7mp-test
 kubectl apply -f kubernetes/rtpengine-worker.yaml 
 ```
 
@@ -53,16 +52,23 @@ Find out your local IP to the `minikube` VM (the below works most of the time):
 export LOCAL_IP=$(echo $(minikube ip) | sed 's/\([0-9]\+\)$/1/')
 ```
 
-## Make a call
+
+## Make a test call
 
 ``` sh
-cd ../rtpengine-k8s-l7mp-test
-perl -I. -I../${RTPENGINE_DIR}/perl/ rtp-call.pl --rtpengine-host=$(minikube ip) --rtpengine-control-port=22222 --local-ip-a=${LOCAL_IP} --local-rtp-port-a=10000 --local-ip-b=${LOCAL_IP} --remote-ip-a=$(minikube ip) --local-rtp-port-b=10002 --remote-ip-b=$(minikube ip)
+perl -I. -I../${RTPENGINE_DIR}/perl/ rtp-call.pl \
+    --rtpengine-host=$(minikube ip) --rtpengine-control-port=22222 \
+    --local-ip-a=${LOCAL_IP} --local-ip-b=${LOCAL_IP} \
+    --local-rtp-port-a=10000 --local-rtp-port-b=10002 \
+    --remote-ip-a=$(minikube ip) --remote-ip-b=$(minikube ip)
 ```
+
 
 ## What's going on here?
 
-1. Init an control channel to rtpengine
+Here is the list of things the Perl script does:
+
+1. Use the NGC Perl client from the rtpengine distro to init an control channel to rtpengine:
 
 ``` perl
 my $r = NGCP::Rtpengine::Call->new(
@@ -73,11 +79,13 @@ my $r = NGCP::Rtpengine::Call->new(
 my $callid = $r->{callid};
 ```
 
-2. Make two RTP endpoints, the caller `a` and the callee `b`, and set up `b` as the media receiver for `a` and vice versa:
+2. Make two RTP endpoints, the caller `a` and the callee `b`, and set up `b` as the media receiver for `a`, and vice versa:
 
 ``` perl
-my $a = $r->client(sockdomain => &Socket::AF_INET, address => {address => $local_ip_a}, port => $local_rtp_port_a);
-my $b = $r->client(sockdomain => &Socket::AF_INET, address => {address => $local_ip_b}, port => $local_rtp_port_b);
+my $a = $r->client(sockdomain => &Socket::AF_INET, 
+    address => {address => $local_ip_a}, port => $local_rtp_port_a);
+my $b = $r->client(sockdomain => &Socket::AF_INET, 
+    address => {address => $local_ip_b}, port => $local_rtp_port_b);
 $a->{media_receiver} = $b;
 $b->{media_receiver} = $a;
 ```
@@ -101,27 +109,28 @@ $r->timer_once($holding_time, sub {
 
 For user `a` (caller), RTP:
 
-    - `ingress-rtp-vsvc-${callid}-${tag_a}`: User-A facing RTP receive socket at the ingress gateway(s)
-    - `ingress-rtp-target-${callid}-${tag_a}`: User-A RTP route from the ingress gateway(s) to the worker(s)
-    - `worker-rtp-rule-${callid}-${tag_a}`: User-A RTP connection routing rule at the worker(s)
+* `ingress-rtp-vsvc-${callid}-${tag_a}`: User-A facing RTP receive socket at the ingress gateway(s)
+* `ingress-rtp-target-${callid}-${tag_a}`: User-A RTP route from the ingress gateway(s) to the worker(s)
+* `worker-rtp-rule-${callid}-${tag_a}`: User-A RTP connection routing rule at the worker(s)
 
 For user `b` (callee), RTP:
 
-    - `ingress-rtp-vsvc-${callid}-${tag_b}`: User-B facing RTP receive socket at the ingress gateway(s)
-    - `ingress-rtp-target-${callid}-${tag_b}`: User-B RTP route from the ingress gateway(s) to the worker(s)
-    - `worker-rtp-rule-${callid}-${tag_b}`: User-B RTP connection routing rule at the worker(s)
+* `ingress-rtp-vsvc-${callid}-${tag_b}`: User-B facing RTP receive socket at the ingress gateway(s)
+* `ingress-rtp-target-${callid}-${tag_b}`: User-B RTP route from the ingress gateway(s) to the worker(s)
+* `worker-rtp-rule-${callid}-${tag_b}`: User-B RTP connection routing rule at the worker(s)
 
 For user `a` (caller), RTCP:
 
-    - `ingress-rtcp-vsvc-${callid}-${tag_a}`: User-A facing RTCP receive socket at the ingress gateway(s)
-    - `ingress-rtcp-target-${callid}-${tag_a}`: User-A RTCP route from the ingress gateway(s) to the worker(s)
-    - `worker-rtcp-rule-${callid}-${tag_a}`: User-A RTCP connection routing rule at the worker(s)
+* `ingress-rtcp-vsvc-${callid}-${tag_a}`: User-A facing RTCP receive socket at the ingress gateway(s)
+* `ingress-rtcp-target-${callid}-${tag_a}`: User-A RTCP route from the ingress gateway(s) to the worker(s)
+* `worker-rtcp-rule-${callid}-${tag_a}`: User-A RTCP connection routing rule at the worker(s)
 
 For user `b` (callee), RTCP:
 
-    - `ingress-rtcp-vsvc-${callid}-${tag_b}`: User-B facing RTCP receive socket at the ingress gateway(s)
-    - `ingress-rtcp-target-${callid}-${tag_b}`: User-B RTCP route from the ingress gateway(s) to the worker(s)
-    - `worker-rtcp-rule-${callid}-${tag_b}`: User-B RTCP connection routing rule at the worker(s)
+* `ingress-rtcp-vsvc-${callid}-${tag_b}`: User-B facing RTCP receive socket at the ingress gateway(s)
+* `ingress-rtcp-target-${callid}-${tag_b}`: User-B RTCP route from the ingress gateway(s) to the worker(s)
+* `worker-rtcp-rule-${callid}-${tag_b}`: User-B RTCP connection routing rule at the worker(s)
+
 
 ## Caveats
 
