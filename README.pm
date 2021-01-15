@@ -1,5 +1,6 @@
 # A test suite for the rtpenegine Kubernetes/l7mp.io integration
 
+This will initialize a local minikube Kubernetes install with all the bells and whistles to run rtpengine over the l7mp service mesh, start a call, and dump connection statistics as collected with RTCP. Should be a good start for any project aiming to build a telco use case on top of l7mp.
 
 ## Getting started
 
@@ -27,7 +28,7 @@ cd rtpengine
 export RTPENGINE_DIR=$(pwd)
 cd ../
 git clone https://github.com/l7mp/l7mp.git
-git clone https://github.com/l7mp/rg0now/rtpengine-k8s-l7mp-test
+git clone https://github.com/l7mp/l7mp/rtpengine-k8s-l7mp-test
 ```
 
 Build latest l7mp proxy locally (may need this to use some unstable features) and fire up the operator+gateway:
