@@ -68,7 +68,7 @@ perl -I. -I../${RTPENGINE_DIR}/perl/ rtp-call.pl \
 
 Here is the list of things the Perl script does:
 
-1. Use the NGC Perl client from the rtpengine distro to init an control channel to rtpengine:
+1. Use the NGCP Perl client from the rtpengine distro to init an control channel to rtpengine:
 
 ``` perl
 my $r = NGCP::Rtpengine::Call->new(
@@ -133,15 +133,15 @@ For user `b` (callee), RTCP:
 ## Caveats
 
 * We predictably lose the first 2-3 RTP/UDP packets from the callee back to the caller. This is because the l7mp gateway VirtualServices run in `server` mode, i.e., "on-demand" upon the reception of the first packet, and it just so happens from time to time that the callee starts first and this somehow creates the above effect. **Fix**: switch the l7mp proxies to `connected` mode (not tested).
-* The client address in the `offer` and the `answer` is currently the original user local IP, i.e., `$LOCAL_IP`, which is not correct because the rtpengine instance receive the RTP packets from the sidecar l7mp proxy on the loopback interface, rather than from the original source IP address of the user. FIX: rewrite `offer` and the `answer` client addresses to `127.0.0.1` (not tested).
-* We need to init 6 separate l7mp resources for each call (3 for the caller and 3 for the callee). **Fix**: we can bring this down to 4 with inlining the ingress gateway Target `ingress-rtp/rtcp-target-*` into the VirtualService `ingress-rtp/rtcp-vsvc-*` (check if this s supported in the operator), but this still seems too many. Idea: resurrect the session operator?
-* RTP packets are send with random payload. This is good for testing (easy to find lost packets) and it works like charm insofar as rtpengine doesn't need transcoding and repacketization. **Fix**: change the RTP client code to send prerecorded streams (or use `ffmpeg`).
-* rtpengine `iptables` offload ("kernelization") is not enabled. **Fix**: deploy the iptables module into the worker Kubernetes nodes and grant the rtpengine container access to the host `iptables` facilities (note sure how to do this, but if this works then rtpengine should automatically start to use the offload engine for suitable calls).
+* The client address in the `offer` and the `answer` is currently the original user local IP, i.e., `$LOCAL_IP`, which is not correct because the rtpengine instance receives the RTP/RTCP packets from the sidecar l7mp proxy on the loopback interface, rather than from the original source IP address of the user. The problem is that the NGCP code ignores the `'media address' => '127.0.0.1'` setting we set in the `offer`/`answer` client API calls. **Fix**: rewrite `offer` and the `answer` client code to allow setting the media address to `127.0.0.1` (not tested).
+* We need to init 12 separate l7mp resources for each call, 6 for RTP and 6 for RTCP (3 for the caller and 3 for the callee, per RTP and RTCP). **Fix**: we can bring this down to 4 per RTP/RTCP with inlining the ingress gateway Target `ingress-rtp/rtcp-target-*` into the VirtualService `ingress-rtp/rtcp-vsvc-*` (check if this s supported in the operator), but this still seems too many. **Idea**: resurrect the session operator?
+* RTP packets are sent with random payload. This is good for testing (easy to find lost packets) and it works like charm insofar as rtpengine doesn't need transcoding and re-packetization. **Fix**: change the RTP client code to send prerecorded streams or use `ffmpeg`.
+* The rtpengine `iptables` offload engine ("kernelization") is not enabled. **Fix**: deploy the iptables module into the worker Kubernetes nodes and grant the rtpengine container access to the host `iptables` facilities (not sure how to do this, but if this works then rtpengine should automatically start to use the offload engine for suitable calls).
 
 ## TODO
 
 * rtpengine runs without transcoding (pure proxy mode), which is fine but kinda defeats the whole purpose of scaling; for demoing scaling we need a workload that stresses the CPUs and transcoding is exactly this type of workload. **Fix**: configure the caller and the calle so that rtpengine will need to do transcoding.
-* We'd need multiple workers to test resiliency. **Fix**: rewrite the worker deployment manifest in `kubernetes/rtpengine-worker.yaml` (should work). Note: Redis needs to be installed and set up separately, this project does not do that.
+* We'd need multiple workers to test resiliency. **Fix**: rewrite the worker deployment manifest in `kubernetes/rtpengine-worker.yaml` (should work). **Note:** Redis needs to be installed and set up separately, this project does not do that.
 * We'd need multiple workers to test scaling. **Fix**: rewrite the worker deployment manifest in `kubernetes/rtpengine-worker.yaml` (should work). 
 * l7mp kernel offload is not enabled. **Fix**: finish and release kernel offload to l7mp.
 
