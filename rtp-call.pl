@@ -47,7 +47,6 @@ GetOptions(
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
-
 # INIT RTP CALL
 
 my $local_rtcp_port_a = $local_rtp_port_a + 1;
