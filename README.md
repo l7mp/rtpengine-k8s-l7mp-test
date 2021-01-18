@@ -4,7 +4,7 @@ This will initialize a local minikube Kubernetes install with all the bells and 
 
 The below figure gives a mile-high view of the l7mp-rtpengine architecture. Note that the actual control of the user session chains should be exercised separately (not shown here).
 
-![l7mp rtpengine](https://github.com/l7mp/rtpengine-k8s-l7mp-test/master/nf-mesh-reference-arch-v4.png)
+![l7mp rtpengine](https://github.com/l7mp/rtpengine-k8s-l7mp-test/blob/master/nf-mesh-reference-arch-v4.png)
 
 
 ## Getting started
