@@ -31,7 +31,7 @@ Clone `rtpengine`, `l7mp`, and the k8s/l7mp test suite:
 git clone https://github.com/sipwise/rtpengine.git
 export RTPENGINE_DIR=$(pwd)/rtpengine
 git clone https://github.com/l7mp/l7mp.git
-git clone https://github.com/l7mp/l7mp/rtpengine-k8s-l7mp-test
+git clone https://github.com/l7mp/rtpengine-k8s-l7mp-test.git
 ```
 
 Build the latest l7mp proxy locally (may need this to use some unstable features) and fire up the operator+gateway:
