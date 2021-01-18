@@ -2,6 +2,11 @@
 
 This will initialize a local minikube Kubernetes install with all the bells and whistles to run rtpengine over the l7mp service mesh, start a call, and dump connection statistics as collected with RTCP. Should be a good start for any project aiming to build a telco use case on top of l7mp.
 
+The below figure gives a mile-high view of the l7mp-rtpengine architecture. Note that the actual control of the user session chains should be exercised separately (not shown here).
+
+![l7mp rtpengine](https://github.com/l7mp/rtpengine-k8s-l7mp-test/master/nf-mesh-reference-arch-v4.png)
+
+
 ## Getting started
 
 Install dependencies:
