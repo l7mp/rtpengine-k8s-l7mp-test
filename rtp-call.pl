@@ -26,6 +26,7 @@ my $local_rtp_port_b  = 10002;
 my $yaml_file         = '/tmp/rtp-config.yaml';
 my $no_k8s            = 0;
 my $holding_time      = 30;
+my $no_rtp            = 0;
 my($man, $help, $verbose);
 
 GetOptions(
@@ -38,6 +39,7 @@ GetOptions(
     'remote-ip-b=s'              => \$remote_ip_b,
     'local-rtp-port-b=i'         => \$local_rtp_port_b,
     'holding-time|t=i'           => \$holding_time,
+    'no-rtp|n'                   => \$no_rtp,
     'no-k8s|n'                   => \$no_k8s,
     'verbose|v+'                 => \$verbose,
     'help|?'                     => \$help,
@@ -116,10 +118,12 @@ unless($no_k8s){
 
 # START RTP/RTCP
 
-$a->start_rtp();
-$a->start_rtcp();
-$b->start_rtp();
-$b->start_rtcp();
+unless($no_rtp){
+    $a->start_rtp();
+    $a->start_rtcp();
+    $b->start_rtp();
+    $b->start_rtcp();
+}
 
 $r->run();
 
